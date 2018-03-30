@@ -111,6 +111,8 @@ function showClosingMessage(event) {
 	event.target.removeEventListener("animationend", showClosingMessage);
 	
 	document.querySelector(".deck").remove();
+	document.querySelector(".score-panel").remove();
+	document.querySelector(".final-info").classList.toggle("invisible", false);
 }
 
 //***********************************************************************************
@@ -130,7 +132,13 @@ function ScoreBoard() {
 	//	create a reference to the clock string in the HTML scoreboard section
 	this.timeElement = null;
 	
+	//	every game starts with a 3-star rating
 	this.starRating = 3;
+	//	default:	any game with bestMoves or fewer moves will receive a 3-star rating
+	this.bestMoves = 30;
+	//	default:	between bestMoves and secBestMoves, game will receive a 2-star rating;
+	//				less than secBestMoves, game gets a 1-star rating
+	this.secBestMoves = 40;
 	
 	//	this method updates the HTML star field in the scoreboard so that it represents
 	//	the value of this.starRating
@@ -148,12 +156,12 @@ function ScoreBoard() {
 			if (lclRating)
 			{
 				starArray[i].firstElementChild.className = "fa fa-star";
+				lclRating--;
 			}
 			else
 			{
 				starArray[i].firstElementChild.className = "fa fa-star-o";
 			}
-			lclRating--;
 		}
 	};
 	
@@ -210,6 +218,16 @@ function ScoreBoard() {
 			this.movesElement.textContent = this.moves.toString();
 			//	call the method to start the clock on every move; it will only do something on the first move
 			this.startClock();
+			
+			if ((this.moves === (this.bestMoves + 1)) && (this.starRating === 3))
+			{
+				this.demerit();
+			}
+			
+			else if ((this.moves === (this.secBestMoves + 1)) && (this.starRating === 2))
+			{
+				this.demerit();
+			}
 		}
 	};
 

@@ -26,6 +26,15 @@ body {
     justify-content: center;
     align-items: center;
     flex-direction: column;
+	position: relative;
+}
+
+.final-info {
+	position: absolute;
+}
+
+.invisible {
+	visibility: hidden;
 }
 
 h1 {
