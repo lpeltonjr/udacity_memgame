@@ -19,6 +19,7 @@ body {
 body {
     background: #ffffff url('../img/geometry2.png'); /* Background pattern from Subtle Patterns */
     font-family: 'Nanum Gothic Coding', monospace;
+	position: relative;
 }
 
 .container {
@@ -26,15 +27,26 @@ body {
     justify-content: center;
     align-items: center;
     flex-direction: column;
-	position: relative;
 }
 
 .final-info {
 	position: absolute;
+	top: 25%;
+	left: 33%;
 }
 
 .invisible {
 	visibility: hidden;
+}
+
+.final-info ul {
+	list-style: none;
+	padding: 0px;
+}
+
+.right-just {
+	display: inline-block;
+	min-width: 180px;
 }
 
 h1 {

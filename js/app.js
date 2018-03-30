@@ -40,10 +40,8 @@ function pertinentCardObj(event) {
 
 	let currCardObj = null;
 
-	for (let i = 0; i < deckObj.cards.length; i++)
-	{
-		if (deckObj.cards[i].deckAssoc === event.target)
-		{
+	for (let i = 0; i < deckObj.cards.length; i++) {
+		if (deckObj.cards[i].deckAssoc === event.target) {
 			currCardObj = deckObj.cards[i];
 		}
 	}
@@ -56,8 +54,7 @@ function openCard(event) {
 
 	let currCardObj = pertinentCardObj(event);
 
-	if (currCardObj !== null)
-	{
+	if (currCardObj !== null) {
 		currCardObj.revealCard();
 	}
 	
@@ -70,8 +67,7 @@ function shutCard(event) {
 
 	let currCardObj = pertinentCardObj(event);
 
-	if (currCardObj !== null)
-	{
+	if (currCardObj !== null) {
 		currCardObj.state = HIDDEN;
 		event.target.className = "card";
 		event.target.removeEventListener("animationend", shutCard);
@@ -84,14 +80,12 @@ function testCard(event) {
 
 	let currCardObj = pertinentCardObj(event);
 
-	if (currCardObj !== null)
-	{
+	if (currCardObj !== null) {
 		currCardObj.matchCard();
 		event.target.removeEventListener("animationend", testCard);
 		
 		//	if all cards are matched, the game is over
-		if (deckObj.gameOver() === true)
-		{
+		if (deckObj.gameOver() === true) {
 			//	stop the clock and don't let any further clicks update the moves counter
 			scoreObj.freezeBoard();
 			//	animate the cards one last time, setting up to display the closing message
@@ -110,21 +104,24 @@ function showClosingMessage(event) {
 
 	event.target.removeEventListener("animationend", showClosingMessage);
 	
-	document.querySelector(".deck").remove();
-	document.querySelector(".score-panel").remove();
+	document.querySelector(".container").remove();
+	//document.querySelector(".score-panel").remove();
 	document.querySelector(".final-info").classList.toggle("invisible", false);
 }
 
 //***********************************************************************************
 //***********************************************************************************
 //
-//	Constructor funtions:	card, deck
+//	Constructor functions:	scoreboard, card, deck
 //
 //***********************************************************************************
 //***********************************************************************************
+
+//	represents the information on the scoreboard
 function ScoreBoard() {
 	
 	this.moves = 0;
+	//	this is a reference to the "moves" counter in the HTML
 	this.movesElement = null;
 	
 	this.startTime = 0;
@@ -132,13 +129,17 @@ function ScoreBoard() {
 	//	create a reference to the clock string in the HTML scoreboard section
 	this.timeElement = null;
 	
-	//	every game starts with a 3-star rating
+	//	every game starts with a 3-star rating, and there is no 0-star rating
 	this.starRating = 3;
 	//	default:	any game with bestMoves or fewer moves will receive a 3-star rating
 	this.bestMoves = 30;
 	//	default:	between bestMoves and secBestMoves, game will receive a 2-star rating;
 	//				less than secBestMoves, game gets a 1-star rating
 	this.secBestMoves = 40;
+
+	//	this is an unused handle to the interval timer which runs the clock; if we wanted to restart
+	//	the game without reloading, we would need this to destroy the timer before creating a new one
+	this.timeHandle;
 	
 	//	this method updates the HTML star field in the scoreboard so that it represents
 	//	the value of this.starRating
@@ -151,15 +152,14 @@ function ScoreBoard() {
 		//	starting from the left, fill-in as many stars as our starRating indicates;
 		//	the remaining stars will be open
 		let lclRating = this.starRating;
-		for (let i = 0; i < starArray.length; i++)
-		{
-			if (lclRating)
-			{
+		for (let i = 0; i < starArray.length; i++) {
+			if (lclRating) {
 				starArray[i].firstElementChild.className = "fa fa-star";
 				lclRating--;
-			}
-			else
-			{
+			//	this styling of braces is something I've considered bad form in C
+			//	code for 30 years; it looks messy, messy, messy; code seems more easily
+			//	interpreted when opening and closing braces are aligned
+			} else {
 				starArray[i].firstElementChild.className = "fa fa-star-o";
 			}
 		}
@@ -168,21 +168,18 @@ function ScoreBoard() {
 	//	this method is called externally to decrement the star rating
 	this.demerit = function () {
 		
-		if (this.starRating > 1)
-		{
+		if (this.starRating > 1) {
 			this.starRating--;
 			this.ratingUpdate();
 		}
 	};
 	
 
-	
 	//	this is called every 1 second from event handler "oneSecUpdate()"
 	this.clockUpdate = function () {
 
 		//	don't update the clock until necessary quantities have been initialized
-		if (this.timeElement !== null)
-		{
+		if (this.timeElement !== null) {
 			//	obtain the number of milliseconds since the first move (click)
 			this.elapsedTime = new Date().getTime() - this.startTime;
 	
@@ -193,7 +190,7 @@ function ScoreBoard() {
 	
 			//	use the built-in methods of the Date object to format the elapsed time for display
 			//	on the scoreboard, then update the clock display; note that UTC time must be requested
-			//	or the local offset from 00:00:00 will be returned
+			//	or the PC's time zone offset from 00:00:00 will be returned
 			this.timeElement.textContent = tempDate.getUTCHours().toString().padStart(2, '0') + ':' + tempDate.getUTCMinutes().toString().padStart(2, '0') + ':' + tempDate.getUTCSeconds().toString().padStart(2, '0');
 		}
 	};
@@ -201,37 +198,37 @@ function ScoreBoard() {
 	//	this must be called on any game move to ensure the clock is running
 	this.startClock = function () {
 
-		if (this.timeElement === null)
-		{
+		if (this.timeElement === null) {
 			this.startTime = new Date().getTime();
 			this.timeElement = document.querySelector(".timeclock");
 		}
 	};
 
-	//	this method is called whenever a card is clicked
+	//	this method is called whenever a card is clicked; it increments the move counter
+	//	and then updates the star rating, if necessary
 	this.movesUpdate = function () {
 
-		if (this.movesElement !== null)
-		{
+		if (this.movesElement !== null) {
 			//	increment the move count and its display
 			this.moves++;
 			this.movesElement.textContent = this.moves.toString();
 			//	call the method to start the clock on every move; it will only do something on the first move
 			this.startClock();
 			
-			if ((this.moves === (this.bestMoves + 1)) && (this.starRating === 3))
-			{
+			//	if it's time to switch from 3 stars to 2 stars, do that
+			if ((this.moves === (this.bestMoves + 1)) && (this.starRating === 3)) {
 				this.demerit();
-			}
-			
-			else if ((this.moves === (this.secBestMoves + 1)) && (this.starRating === 2))
-			{
+			//	note also the ambiguity of inserting a comment on the "else if" when it begins on the same
+			//	line as the closing brace of the preceding if statement; is this comment related to the
+			//	block in which it appears or is it related to the subsequent block?
+			} else if ((this.moves === (this.secBestMoves + 1)) && (this.starRating === 2)) {
 				this.demerit();
 			}
 		}
 	};
 
-	//	this will prevent any further updates to the displayed number of moves or the displayed time
+	//	this will prevent any further updates to the displayed number of moves or the displayed time;
+	//	it severs connection to the HTML, so that the updates won't be attempted
 	this.freezeBoard = function () {
 		
 		this.timeElement = null;
@@ -239,11 +236,11 @@ function ScoreBoard() {
 	};
 	
 	//	this will reset the clock display and prevent any updates until the first subsequent
-	//	move of the game
+	//	move of the game; this is really only useful when the game can be restarted without reloading
+	//	the page, which I've decided not to support
 	this.initClock = function () {
 
-		if (this.timeElement !== null)
-		{
+		if (this.timeElement !== null) {
 			this.timeElement.textContent = "00:00:00";
 			this.timeElement = null;
 		}
@@ -251,20 +248,24 @@ function ScoreBoard() {
 	
 	this.initScoreboard = function () {
 		
+		//	init the clock
 		this.initClock();
+		
+		//	init the move counter
 		this.moves = 0;
-		if (this.movesElement === null)
-		{
+		if (this.movesElement === null) {
 			this.movesElement = document.querySelector(".move-num");
 		}
 		this.movesElement.textContent = this.moves.toString();
-		
+
+		//	init the reload button/icon
 		//	when the restart icon is clicked, the game will be restarted via function resetGame()
 		document.querySelector(".restart").addEventListener("click", resetGame);
 		
+		//	ensure on start-up that whatever the HTML file encodes for the star rating is overwritten
+		//	with something representing the star rating in this object
 		this.ratingUpdate();
 	};
-	
 }
 
 //	represents an individual card on the deck; each card contains a reference to an HTML
@@ -295,10 +296,9 @@ function Card() {
 	this.shutCard = function () {
 
 		//	ensure this method won't do anything or blow anything up if called unexpectedly
-		if ((this.deckAssoc !== null) && (this.state !== HIDDEN))
-		{
+		if ((this.deckAssoc !== null) && (this.state !== HIDDEN)) {
 			//	we're going to run an animation to close the card; final processing occurs at "animationend"
-			//	note that shutCard does not refer to this method
+			//	note that shutCard does NOT refer to this method but to an external function
 			this.deckAssoc.addEventListener("animationend", shutCard);
 			//	launch the animation by associating the HTML card with ".close" class in the stylesheet
 			this.deckAssoc.className = "card close";
@@ -310,8 +310,7 @@ function Card() {
 	this.revealCard = function () {
 		
 		//	ensure this method won't do anything or blow anything up if called unexpectedly
-		if ((this.deckAssoc !== null) && (this.state === HIDDEN))
-		{
+		if ((this.deckAssoc !== null) && (this.state === HIDDEN)) {
 			//	we're going to run an animation to open the card; when it is complete, a decision is to be
 			//	made regarding whether the card has matched another open card; the decision will be processed
 			//	by the testCard event handler, using method "matchCard" below
@@ -329,8 +328,7 @@ function Card() {
 		
 		//	examine the state of the card whose property is an identical innerHTML string; if it
 		//	is open, awaiting a match, then this is the match!
-		if (this.pairedCard.state === PENDING)
-		{
+		if (this.pairedCard.state === PENDING) {
 			//	launch the match animation for this card via the class ".match" in the stylesheet;
 			//	there's no real reason to do anything at animationend, because the card will remain
 			//	shown until the end of the game, and styling in the .match class need not be changed
@@ -344,23 +342,17 @@ function Card() {
 			//	remove the object reference in this global variable; it stored a reference to the
 			//	visible card awaiting a match
 			pendingCard = null;
-		}
-
 		//	otherwise, this is a mismatch or the first card of a pair
-		else
-		{
+		} else {
 			//	if there's no reference to a pending card (either because this is the first move
 			//	of the game or because the last card resulted in a match), then this becomes
 			//	the pending card
-			if (pendingCard === null)
-			{
+			if (pendingCard === null) {
 				pendingCard = this;
-			}
-
+			
 			//	otherwise, there is another card visible; close both cards with the mismatch
 			//	animation
-			else
-			{
+			} else	{
 				pendingCard.shutCard();
 				this.shutCard();
 				pendingCard = null;
@@ -373,8 +365,7 @@ function Card() {
 	//	without using the mismatch animation
 	this.hideCard = function () {
 
-		if (this.deckAssoc !== null)
-		{
+		if (this.deckAssoc !== null) {
 			this.deckAssoc.className = "card";
 			return true;
 		}
@@ -400,13 +391,13 @@ function Deck() {
 	
 	//	this is called at game's end
 	this.lastAnimation = function () {
-		
+
+		//	i isn't defined in the for loop because I need its scope to be function scope;
 		let i;
 		
 		//	run the match animation on all cards, setting up to display the
 		//	closing message when the last card's animation is complete
-		for (i = 0; i < this.cards.length; i++)
-		{
+		for (i = 0; i < this.cards.length; i++) {
 			this.cards[i].deckAssoc.className = "card rematch";
 		}
 		i--;
@@ -418,10 +409,8 @@ function Deck() {
 		
 		let result = true;
 
-		for (let i = 0; i < this.cards.length; i++)
-		{
-			if (this.cards[i].state !== MATCHED)
-			{
+		for (let i = 0; i < this.cards.length; i++) {
+			if (this.cards[i].state !== MATCHED) {
 				result = false;
 			}
 		}
@@ -429,11 +418,10 @@ function Deck() {
 		return result;
 	};
 
-	//	hides all cards without animation
+	//	hides all cards without triggering an animation
 	this.hideAllCards = function () {
 
-		for (let i = 0; i < this.cards.length; i++)
-		{
+		for (let i = 0; i < this.cards.length; i++) {
 			this.cards[i].hideCard();
 		}
 	};
@@ -460,8 +448,7 @@ function Deck() {
 		const htmlCardRefs = document.querySelectorAll(".card");
 		
 		//	use the random indices to bind the JavaScript card objects to the HTML cards
-		for (let i = 0; i < this.quantity; i++)
-		{
+		for (let i = 0; i < this.quantity; i++) {
 			this.cards[i].deckAssoc = htmlCardRefs[(randSeq[i])];
 			//	the HTML content of each card in the HTML source is meaningless because it gets
 			//	replaced here
@@ -480,8 +467,7 @@ function Deck() {
 	this.createDeck = function () {
 
 		//	don't allow creating the deck twice!
-		if (this.cards.length === 0)
-		{
+		if (this.cards.length === 0) {
 			for (let i = 0; i < this.quantity; i++) {
 
 				//	create a JavaScript card object and push its reference onto the 
@@ -489,18 +475,16 @@ function Deck() {
 				this.cards.push(new Card());
 	
 				//	if this is the 2nd card of a matched pair
-				if (i >= (this.quantity / 2))
-				{
+				if (i >= (this.quantity / 2)) {
 					//	assign innerHTML content (the fontsAwesome icon) to this card
 					this.cards[i].visibleCard = cardContent[(i - (this.quantity / 2))];
 					//	set the paired relationship between cards having with the same content;
 					//	must set it when both cards in the pair exist
 					this.cards[i].pairedCard = this.cards[(i - (this.quantity / 2))];
 					this.cards[i].pairedCard.pairedCard = this.cards[i];
-				}
+				
 				//	if this is the first card of a matched pair
-				else
-				{
+				} else {
 					//	assign innerHTML to the card object
 					this.cards[i].visibleCard = cardContent[i];
 				}
