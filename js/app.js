@@ -103,9 +103,18 @@ function resetGame(event) {
 function showClosingMessage(event) {
 
 	event.target.removeEventListener("animationend", showClosingMessage);
+
+	//	perform last-minute updates to the final score information:
+	//	set the game time
+	document.querySelector(".final-time").textContent = scoreObj.timeString;
+	//	set the move count
+	document.querySelector(".final-count").textContent = scoreObj.moves.toString();
+	//	clone the node with the stars rating and place it on the final score page
+	let starNodeRef = document.querySelector(".score-panel").firstElementChild.cloneNode(true);
+	document.querySelector(".final-rating").appendChild(starNodeRef);
 	
+	//	remove the game and make the final score page visible
 	document.querySelector(".container").remove();
-	//document.querySelector(".score-panel").remove();
 	document.querySelector(".final-info").classList.toggle("invisible", false);
 }
 
@@ -126,6 +135,7 @@ function ScoreBoard() {
 	
 	this.startTime = 0;
 	this.elapsedTime = 0;
+	this.timeString = "";
 	//	create a reference to the clock string in the HTML scoreboard section
 	this.timeElement = null;
 	
@@ -190,8 +200,10 @@ function ScoreBoard() {
 	
 			//	use the built-in methods of the Date object to format the elapsed time for display
 			//	on the scoreboard, then update the clock display; note that UTC time must be requested
-			//	or the PC's time zone offset from 00:00:00 will be returned
-			this.timeElement.textContent = tempDate.getUTCHours().toString().padStart(2, '0') + ':' + tempDate.getUTCMinutes().toString().padStart(2, '0') + ':' + tempDate.getUTCSeconds().toString().padStart(2, '0');
+			//	or the PC's time zone offset from 00:00:00 will be returned;
+			//	store it to a string first, so it can be used at the end on the "Game Over" page
+			this.timeString = tempDate.getUTCHours().toString().padStart(2, '0') + ':' + tempDate.getUTCMinutes().toString().padStart(2, '0') + ':' + tempDate.getUTCSeconds().toString().padStart(2, '0');
+			this.timeElement.textContent = this.timeString;
 		}
 	};
 	

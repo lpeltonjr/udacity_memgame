@@ -158,20 +158,25 @@ h1 {
     margin-bottom: 10px;
 }
 
-.score-panel .stars {
+.score-panel .stars,
+.final-rating .stars {
 	margin: 0;
 	padding: 0;
 	display: inline-block;
 	margin: 0 5px 0 0;
 }
 
-.score-panel .stars li {
+.score-panel .stars li,
+.final-rating .stars li {
 	list-style: none;
 	display: inline-block;
 }
 
 .timeclock,
-.move-count {
+.move-count,
+.final-time,
+.final-count,
+.right-just {
 	font-size: 1.25em;
 }
 
