@@ -20,12 +20,25 @@ const PENDING	= 1;
 const MATCHED	= 2;
 const CLOSING	= 3;
 
-//	this semaphore is an attempt to keep new click events from being handled while animations
-//	are running in the browser; strange things happen when a card is being closed and its matching
-//	card is clicked during the animation (I think that's what's happening)
+//	this semaphore is for blocking the event handler for card clicks while a card is executing
+//	its "open" sequence;  cannot have 2 cards opening simultaneously or the game logic is toast
 let cardSemaphore = 0;
 
-
+//	this function I lifted from MDN to test support for localStorage in the browser -- for future use
+/*
+function localStorageSupported() {
+	
+	try {
+		let storage = window.localStorage;
+		let x = '__storage_test__';
+		storage.setItem(x, x);
+		storage.removeItem(x);
+		return true;
+	}
+	catch(e) {
+		return false;
+	};
+}	*/
 
 //***********************************************************************************
 //***********************************************************************************
@@ -70,12 +83,13 @@ function openCard(event) {
 			currCardObj.revealCard();
 		}
 	
+		//	increments the move counter and handles changing the star rating, if necessary
 		scoreObj.movesUpdate();
 	}
 }
 
 //	returns a card to HIDDEN with class "card" (only) at the end
-//	of the mismatched animation
+//	of the mismatch animation
 function shutCard(event) {
 
 	//	locate the card object to which this event pertains
@@ -133,6 +147,9 @@ function showClosingMessage(event) {
 	//	clone the node with the stars rating and place it on the final score page
 	let starNodeRef = document.querySelector(".score-panel").firstElementChild.cloneNode(true);
 	document.querySelector(".final-rating").appendChild(starNodeRef);
+
+	//	activate the restart icon on the final page
+	document.querySelector(".final-restart").addEventListener("click", resetGame);
 	
 	//	remove the game and make the final score page visible
 	document.querySelector(".container").remove();
@@ -172,8 +189,8 @@ function ScoreBoard() {
 	//	the game without reloading, we would need this to destroy the timer before creating a new one
 	this.timeHandle;
 	
-	//	reference to the localStorage space of the browser
-	this.persistentData = null;
+	//	reference to the localStorage space of the browser -- future enhancement
+	//	this.persistentData = null;
 	
 	//	this method updates the HTML star field in the scoreboard so that it represents
 	//	the value of this.starRating
@@ -240,7 +257,7 @@ function ScoreBoard() {
 		}
 	};
 
-	//	this method is called whenever a card is clicked; it increments the move counter
+	//	this method is called when a card is clicked; it increments the move counter
 	//	and then updates the star rating, if necessary
 	this.movesUpdate = function () {
 
@@ -282,17 +299,6 @@ function ScoreBoard() {
 		}
 	};
 	
-/*	this.storageAvailable = function () {
-	
-		try {
-			let storage = window,
-            x = '__storage_test__';
-        storage.setItem(x, x);
-        storage.removeItem(x);
-        return true;
-    }
-    catch(e) {	
-	};	*/
 	
 	this.initScoreboard = function () {
 		
@@ -313,6 +319,12 @@ function ScoreBoard() {
 		//	ensure on start-up that whatever the HTML file encodes for the star rating is overwritten
 		//	with something representing the star rating in this object
 		this.ratingUpdate();
+		
+//		to be added sometime in the future; out of time to add this right now
+/*		if (localStorageSupported() === true)
+		{
+			this.persistentData = window.localStorage;
+		}	*/
 	};
 }
 

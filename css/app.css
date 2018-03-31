@@ -180,6 +180,11 @@ h1 {
 	font-size: 1.25em;
 }
 
-.score-panel .restart {
+.score-panel .restart,
+.new-stats .final-restart {
 	cursor: pointer;
+}
+
+.final-restart {
+	color: red;
 }
