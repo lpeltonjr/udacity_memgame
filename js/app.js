@@ -19,6 +19,11 @@ const HIDDEN	= 0;
 const PENDING	= 1;
 const MATCHED	= 2;
 
+//	this semaphore is an attempt to keep new click events from being handled while animations
+//	are running in the browser; strange things happen when a card is being closed and its matching
+//	card is clicked during the animation (I think that's what's happening)
+let cardSemaphore = 0;
+
 
 
 //***********************************************************************************
@@ -52,13 +57,17 @@ function pertinentCardObj(event) {
 //	flips open a hidden card in response to a click
 function openCard(event) {
 
-	let currCardObj = pertinentCardObj(event);
+	if (cardSemaphore === 0) {
+		cardSemaphore++;
+		
+		let currCardObj = pertinentCardObj(event);
 
-	if (currCardObj !== null) {
-		currCardObj.revealCard();
-	}
+		if (currCardObj !== null) {
+			currCardObj.revealCard();
+		}
 	
-	scoreObj.movesUpdate();
+		scoreObj.movesUpdate();
+	}
 }
 
 //	returns a card to HIDDEN with class "card" (only) at the end
@@ -71,6 +80,12 @@ function shutCard(event) {
 		currCardObj.state = HIDDEN;
 		event.target.className = "card";
 		event.target.removeEventListener("animationend", shutCard);
+
+		//	cards are shut in pairs; cardSemaphore will be 2 at the outset;
+		//	when it is decremented to 0, new card clicks can be handled
+		if (cardSemaphore > 0) {
+			cardSemaphore--;
+		}
 	}
 }
 
@@ -354,6 +369,10 @@ function Card() {
 			//	remove the object reference in this global variable; it stored a reference to the
 			//	visible card awaiting a match
 			pendingCard = null;
+			
+			//	when a match occurs, there's no reason to delay handling a new click event
+			cardSemaphore = 0;
+			
 		//	otherwise, this is a mismatch or the first card of a pair
 		} else {
 			//	if there's no reference to a pending card (either because this is the first move
@@ -361,10 +380,15 @@ function Card() {
 			//	the pending card
 			if (pendingCard === null) {
 				pendingCard = this;
+				//	this card will stay open, and we can accept new card clicks now
+				cardSemaphore = 0;
 			
 			//	otherwise, there is another card visible; close both cards with the mismatch
 			//	animation
 			} else	{
+				//	2 cards will be shut simultaneously, ensure cardSemaphore holds off new card click events
+				//	until both these cards' animation sequences have finished
+				cardSemaphore++;
 				pendingCard.shutCard();
 				this.shutCard();
 				pendingCard = null;
