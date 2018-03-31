@@ -18,6 +18,7 @@ let pendingCard = null;
 const HIDDEN	= 0;
 const PENDING	= 1;
 const MATCHED	= 2;
+const CLOSING	= 3;
 
 //	this semaphore is an attempt to keep new click events from being handled while animations
 //	are running in the browser; strange things happen when a card is being closed and its matching
@@ -57,10 +58,12 @@ function pertinentCardObj(event) {
 //	flips open a hidden card in response to a click
 function openCard(event) {
 
-	//	this is to ignore clicks that occur during card closing animations
+	//	cardSemaphore is for blocking this event handler while cards are opening; only
+	//	one card can be opened at a time or the game logic fails
 	if (cardSemaphore === 0) {
 		cardSemaphore++;
 		
+		//	locate the card object to which the click event pertains
 		let currCardObj = pertinentCardObj(event);
 
 		if (currCardObj !== null) {
@@ -75,33 +78,32 @@ function openCard(event) {
 //	of the mismatched animation
 function shutCard(event) {
 
+	//	locate the card object to which this event pertains
 	let currCardObj = pertinentCardObj(event);
 
 	if (currCardObj !== null) {
-		//	this conditional isn't necessary, but I'm leaving it as a safety mechanism
-		if (currCardObj.pairedCard.state === HIDDEN) {
-			currCardObj.state = HIDDEN;
-			event.target.className = "card";
-		}
-		event.target.removeEventListener("animationend", shutCard);
 
-		//	cards are shut in pairs; cardSemaphore will be 2 at the outset;
-		//	when it is decremented to 0, new card clicks can be handled
-		if (cardSemaphore > 0) {
-			cardSemaphore--;
-		}
+		currCardObj.state = HIDDEN;
+		//	return the card's styling to showing a face-down card
+		event.target.className = "card";
 	}
+
+	event.target.removeEventListener("animationend", shutCard);	
 }
 
 //	calls a card object's method to test for a match at the end of
 //	that card's flip-open animation
 function testCard(event) {
 
+	//	locate the card object to which this event pertains
 	let currCardObj = pertinentCardObj(event);
-
+	
+	event.target.removeEventListener("animationend", testCard);
+	
 	if (currCardObj !== null) {
+
+		//	the card is open; now check for a match to another open card
 		currCardObj.matchCard();
-		event.target.removeEventListener("animationend", testCard);
 		
 		//	if all cards are matched, the game is over
 		if (deckObj.gameOver() === true) {
@@ -169,6 +171,9 @@ function ScoreBoard() {
 	//	this is an unused handle to the interval timer which runs the clock; if we wanted to restart
 	//	the game without reloading, we would need this to destroy the timer before creating a new one
 	this.timeHandle;
+	
+	//	reference to the localStorage space of the browser
+	this.persistentData = null;
 	
 	//	this method updates the HTML star field in the scoreboard so that it represents
 	//	the value of this.starRating
@@ -277,6 +282,18 @@ function ScoreBoard() {
 		}
 	};
 	
+/*	this.storageAvailable = function () {
+	
+		try {
+			let storage = window,
+            x = '__storage_test__';
+        storage.setItem(x, x);
+        storage.removeItem(x);
+        return true;
+    }
+    catch(e) {	
+	};	*/
+	
 	this.initScoreboard = function () {
 		
 		//	init the clock
@@ -324,79 +341,87 @@ function Card() {
 	//	card methods
 	//	*****************************************************************************
 	
-	this.shutCard = function () {
+	this.closeCard = function () {
 
 		//	ensure this method won't do anything or blow anything up if called unexpectedly
-		if ((this.deckAssoc !== null) && (this.state !== HIDDEN)) {
+		if ((this.deckAssoc !== null) && (this.state === PENDING)) {
+			
+			this.state = CLOSING;
+			
 			//	we're going to run an animation to close the card; final processing occurs at "animationend"
-			//	note that shutCard does NOT refer to this method but to an external function
 			this.deckAssoc.addEventListener("animationend", shutCard);
 			//	launch the animation by associating the HTML card with ".close" class in the stylesheet
 			this.deckAssoc.className = "card close";
 			return true;
+		} else {
+
+			return false;
 		}
-		return false;
 	};
 
 	this.revealCard = function () {
 		
 		//	ensure this method won't do anything or blow anything up if called unexpectedly
 		if ((this.deckAssoc !== null) && (this.state === HIDDEN)) {
+			//	the card state is PENDING until a determination is made whether there's a match
+			this.state = PENDING;
 			//	we're going to run an animation to open the card; when it is complete, a decision is to be
 			//	made regarding whether the card has matched another open card; the decision will be processed
 			//	by the testCard event handler, using method "matchCard" below
 			this.deckAssoc.addEventListener("animationend", testCard);
 			//	launch the animation by associating the HTML card with ".open" class in the stylesheet
 			this.deckAssoc.className = "card open";
-			//	the card state is PENDING until a determination is made whether there's a match
-			this.state = PENDING;
+
 			return true;
+		} else {
+			
+			//	release this card's block on the openCard event handler
+			cardSemaphore--;
+			return false;
 		}
-		return false;
 	};
 	
 	this.matchCard = function () {
 		
-		//	examine the state of the card whose property is an identical innerHTML string; if it
-		//	is open, awaiting a match, then this is the match!
-		if (this.pairedCard.state === PENDING) {
-			//	launch the match animation for this card via the class ".match" in the stylesheet;
-			//	there's no real reason to do anything at animationend, because the card will remain
-			//	shown until the end of the game, and styling in the .match class need not be changed
-			this.deckAssoc.className = "card match";
-			this.state = MATCHED;
+		if ((this.deckAssoc !== null) && (this.state === PENDING))
+		{
+			//	examine the state of the card whose property is an identical innerHTML string; if it
+			//	is open, awaiting a match, then this is the match!
+			if (this.pairedCard.state === PENDING) {
 
-			//	launch the match animation for the matching card, also
-			this.pairedCard.deckAssoc.className = "card match";
-			this.pairedCard.state = MATCHED;
+				this.state = MATCHED;
+				this.pairedCard.state = MATCHED;
+			
+				//	launch the match animation for this card via the class ".match" in the stylesheet;
+				//	there's no real reason to do anything at animationend, because the card will remain
+				//	shown until the end of the game, and styling in the .match class need not be changed
+				this.deckAssoc.className = "card match";
+				//	launch the match animation for the matching card, also
+				this.pairedCard.deckAssoc.className = "card match";
 
-			//	remove the object reference in this global variable; it stored a reference to the
-			//	visible card awaiting a match
-			pendingCard = null;
-			
-			//	when a match occurs, there's no reason to delay handling a new click event
-			cardSemaphore = 0;
-			
-		//	otherwise, this is a mismatch or the first card of a pair
-		} else {
-			//	if there's no reference to a pending card (either because this is the first move
-			//	of the game or because the last card resulted in a match), then this becomes
-			//	the pending card
-			if (pendingCard === null) {
-				pendingCard = this;
-				//	this card will stay open, and we can accept new card clicks now
-				cardSemaphore = 0;
-			
-			//	otherwise, there is another card visible; close both cards with the mismatch
-			//	animation
-			} else	{
-				//	2 cards will be shut simultaneously, ensure cardSemaphore holds off new card click events
-				//	until both these cards' animation sequences have finished
-				cardSemaphore++;
-				pendingCard.shutCard();
-				this.shutCard();
+				//	remove the object reference in this global variable; it stored a reference to the
+				//	visible card awaiting a match
 				pendingCard = null;
+			
+			//	otherwise, this is a mismatch or the first card of a pair
+			} else {
+				//	if there's no reference to a pending card (either because this is the first move
+				//	of the game or because the last card resulted in a match), then this becomes
+				//	the pending card
+				if (pendingCard === null) {
+					pendingCard = this;
+				//	otherwise, there is another card visible; close both cards with the mismatch
+				//	animation
+				} else	{
+
+					pendingCard.closeCard();
+					this.closeCard();
+					pendingCard = null;
+				}
 			}
+		
+			//	release this card's block on the openCard event handler
+			cardSemaphore--;
 		}
 	};
 

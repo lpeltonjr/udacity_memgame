@@ -95,7 +95,7 @@ h1 {
 
 .deck .card.open {
     cursor: default;
-	animation:	flip-open 0.33s ease 0s 1 normal forwards running;
+	animation:	flip-open 0.40s ease 0s 1 normal forwards running;
     box-shadow: 5px 2px 20px 0 rgba(46, 61, 73, 0.5);
 }
 
@@ -109,7 +109,7 @@ h1 {
 	transform: rotateY(0deg);
     cursor: default;
     background: #02ccba;
-	animation:	icon-balloon 0.33s ease 0s 1 normal forwards running;
+	animation:	icon-balloon 0.40s ease 0s 1 normal forwards running;
     box-shadow: 5px 2px 20px 0 rgba(46, 61, 73, 0.5);
 }
 
@@ -126,7 +126,7 @@ h1 {
 	transform: rotateY(0deg);
     cursor: default;
     background: #02ccba;
-	animation:	icon-balloon2 0.66s ease 0s 1 normal forwards running;
+	animation:	icon-balloon2 0.50s ease 0s 1 normal forwards running;
     box-shadow: 5px 2px 20px 0 rgba(46, 61, 73, 0.5);
 }
 
