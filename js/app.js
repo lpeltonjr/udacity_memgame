@@ -57,6 +57,7 @@ function pertinentCardObj(event) {
 //	flips open a hidden card in response to a click
 function openCard(event) {
 
+	//	this is to ignore clicks that occur during card closing animations
 	if (cardSemaphore === 0) {
 		cardSemaphore++;
 		
@@ -77,8 +78,11 @@ function shutCard(event) {
 	let currCardObj = pertinentCardObj(event);
 
 	if (currCardObj !== null) {
-		currCardObj.state = HIDDEN;
-		event.target.className = "card";
+		//	this conditional isn't necessary, but I'm leaving it as a safety mechanism
+		if (currCardObj.pairedCard.state === HIDDEN) {
+			currCardObj.state = HIDDEN;
+			event.target.className = "card";
+		}
 		event.target.removeEventListener("animationend", shutCard);
 
 		//	cards are shut in pairs; cardSemaphore will be 2 at the outset;
