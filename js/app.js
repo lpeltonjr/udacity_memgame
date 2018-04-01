@@ -60,8 +60,11 @@ function pertinentCardObj(event) {
 	let currCardObj = null;
 
 	for (let i = 0; i < deckObj.cards.length; i++) {
+
 		if (deckObj.cards[i].deckAssoc === event.target) {
 			currCardObj = deckObj.cards[i];
+			//	I forgot to include a break here and was wasting processor time
+			break;
 		}
 	}
 
@@ -74,17 +77,26 @@ function openCard(event) {
 	//	cardSemaphore is for blocking this event handler while cards are opening; only
 	//	one card can be opened at a time or the game logic fails
 	if (cardSemaphore === 0) {
-		cardSemaphore++;
 		
 		//	locate the card object to which the click event pertains
 		let currCardObj = pertinentCardObj(event);
 
+		//	NOTE that event.target isn't the same object when a closed card is clicked as when
+		//	an open card is clicked; when an open card is clicked, pertinentCardObj() will return null
+		//	because the HTML element reference in the card object is to the CLOSED card in the HTML; I wasn't
+		//	handling a return of null from pertinentCardObj() correctly, as I was just intending the conditional
+		//	test for null here to be a safety mechanism
 		if (currCardObj !== null) {
-			currCardObj.revealCard();
+			cardSemaphore++;
+
+			if ((currCardObj.revealCard()) === true)
+			{
+				//	increments the move counter and handles changing the star rating, if necessary
+				//	NOTE -- only update the move counter when a card state has changed from HIDDEN
+				//	to PENDING, as signalled by revealCard() being true
+				scoreObj.movesUpdate();				
+			}
 		}
-	
-		//	increments the move counter and handles changing the star rating, if necessary
-		scoreObj.movesUpdate();
 	}
 }
 
@@ -372,7 +384,7 @@ function Card() {
 	};
 
 	this.revealCard = function () {
-		
+
 		//	ensure this method won't do anything or blow anything up if called unexpectedly
 		if ((this.deckAssoc !== null) && (this.state === HIDDEN)) {
 			//	the card state is PENDING until a determination is made whether there's a match
