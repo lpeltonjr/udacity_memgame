@@ -33,6 +33,7 @@ body {
 	position: absolute;
 	top: 25%;
 	left: 33%;
+	min-width: 100vw;
 }
 
 .invisible {
