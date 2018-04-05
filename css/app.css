@@ -189,3 +189,14 @@ h1 {
 .final-restart {
 	color: red;
 }
+
+@media screen and (max-width: 660px)
+{
+	.deck {
+		width: 350px;
+	}
+	
+	.card {
+		margin: 15px 0px;
+	}
+}
