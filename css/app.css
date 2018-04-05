@@ -199,4 +199,8 @@ h1 {
 	.card {
 		margin: 15px 0px;
 	}
+	
+	.final-info {
+		left: 10%;
+	}	
 }
